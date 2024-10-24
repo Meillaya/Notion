@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import AuthLayout from './components/auth/AuthLayout';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/Dashboard.tsx';
 import Login from './components/auth/Login';
 import Verify from './components/auth/Verify';
 
