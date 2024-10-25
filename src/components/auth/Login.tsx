@@ -16,15 +16,13 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await requestAuthCode(email);
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await requestAuthCode(email);
       setStoreEmail(email);
       navigate('/verify');
     } catch (err) {
-      setError('Failed to send verification code. Please try again.');
-      console.error('Login error:', err);
+      const error = err as Error;
+      setError(error.message || 'Failed to send verification code. Please try again.');
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -49,6 +47,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Enter your email"
           />
         </div>
       </div>

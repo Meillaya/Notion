@@ -7,120 +7,91 @@ interface ApiError extends Error {
 
 async function handleResponse(response: Response) {
   const data = await response.json();
-
+  
   if (!response.ok) {
     const error = new Error(data.error || 'An error occurred') as ApiError;
     error.status = response.status;
     error.data = data;
     throw error;
   }
-
+  
   return data;
 }
 
-export async function requestAuthCode(email: string) {
+interface RegisterData {
+  email: string;
+  password: string;
+}
+
+interface LoginData {
+  email: string;
+  password: string;
+}
+
+export async function registerUser(data: RegisterData) {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to register');
+  }
+}
+
+export async function loginUser(data: LoginData) {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(data),
     });
-
+    
     return handleResponse(response);
   } catch (error) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to request auth code');
+    throw new Error('Failed to login');
   }
 }
 
-export async function verifyAuthCode(email: string, code: string) {
+export async function requestPasswordReset(email: string) {
   try {
-    const response = await fetch(`${API_URL}/auth/verify`, {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({ email }),
     });
-
+    
     return handleResponse(response);
   } catch (error) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to verify auth code');
+    throw new Error('Failed to request password reset');
   }
 }
 
-export async function createPage(token: string) {
+export async function resetPassword(token: string, password: string) {
   try {
-    const response = await fetch(`${API_URL}/pages`, {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
     });
-
+    
     return handleResponse(response);
   } catch (error) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to create page');
-  }
-}
-
-export async function updatePage(token: string, pageId: number, updates: { title?: string; content?: string }) {
-  try {
-    const response = await fetch(`${API_URL}/pages/${pageId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-
-    return handleResponse(response);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to update page');
-  }
-}
-
-export async function getPages(token: string) {
-  try {
-    const response = await fetch(`${API_URL}/pages`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    return handleResponse(response);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch pages');
-  }
-}
-
-export async function getPage(token: string, pageId: number) {
-  try {
-    const response = await fetch(`${API_URL}/pages/${pageId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    return handleResponse(response);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch page');
+    throw new Error('Failed to reset password');
   }
 }

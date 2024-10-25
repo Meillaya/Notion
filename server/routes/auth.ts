@@ -1,64 +1,98 @@
 import express from 'express';
 import { z } from 'zod';
-import { generateAuthCode, verifyAuthCode } from '../services/auth';
-import { createUser, findUserByEmail } from '../services/users';
-import { sendAuthCode } from '../services/email';
+import {
+  registerUser,
+  loginUser,
+  initiatePasswordReset,
+  resetPassword,
+} from '../services/auth';
 
 const router = express.Router();
 
-const emailSchema = z.object({
-  email: z.string().email(),
+const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
 });
 
-const verifySchema = z.object({
-  email: z.string().email(),
-  code: z.string().length(6),
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+});
+
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password } = registerSchema.parse(req.body);
+    const user = await registerUser(email, password);
+    res.json({ message: 'Registration successful', userId: user.id });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors[0].message });
+    } else {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: 'Failed to register user' });
+    }
+  }
 });
 
 router.post('/login', async (req, res) => {
   try {
-    const { email } = emailSchema.parse(req.body);
-    let user = await findUserByEmail(email);
-    
-    if (!user) {
-      user = await createUser(email);
-    }
-
-    const code = await generateAuthCode(user.id);
-    
-    try {
-      await sendAuthCode(email, code);
-      res.json({ message: 'Auth code sent' });
-    } catch (emailError) {
-      console.error('Email error:', emailError);
-      // For development, return the code in the response
-      // Remove this in production!
-      res.json({ message: 'Auth code sent', code });
-    }
+    const { email, password } = loginSchema.parse(req.body);
+    const { token } = await loginUser(email, password);
+    res.json({ token });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(400).json({ error: 'Invalid request' });
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors[0].message });
+    } else {
+      console.error('Login error:', error);
+      res.status(401).json({ error: 'Invalid email or password' });
+    }
   }
 });
 
-router.post('/verify', async (req, res) => {
+router.post('/forgot-password', async (req, res) => {
   try {
-    const { email, code } = verifySchema.parse(req.body);
-    const user = await findUserByEmail(email);
-
-    if (!user) {
-      return res.status(400).json({ error: 'User not found' });
-    }
-
-    const token = await verifyAuthCode(user.id, code);
-    if (!token) {
-      return res.status(400).json({ error: 'Invalid or expired code' });
-    }
-
-    res.json({ token });
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    await initiatePasswordReset(email);
+    res.json({ message: 'If the email exists, reset instructions have been sent' });
   } catch (error) {
-    console.error('Verify error:', error);
-    res.status(400).json({ error: 'Invalid request' });
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors[0].message });
+    } else {
+      console.error('Password reset request error:', error);
+      res.status(500).json({ error: 'Failed to process reset request' });
+    }
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+    await resetPassword(token, password);
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors[0].message });
+    } else {
+      console.error('Password reset error:', error);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
   }
 });
 

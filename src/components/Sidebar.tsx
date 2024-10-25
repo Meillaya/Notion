@@ -1,64 +1,58 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
-  Plus,
-  LogOut,
   ChevronRight,
   ChevronDown,
   Star,
   Clock,
   Menu,
+  LogOut,
+  Plus,
 } from 'lucide-react';
 import { useEditorStore } from '../store/editor';
 import { useAuthStore } from '../store/auth';
 import { cn } from '../lib/utils';
 
-interface Page {
-  id: string;
-  title: string;
-  parent_id: string | null;
-  is_favorite: boolean;
-  updated_at: string;
-}
-
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [recentPages, setRecentPages] = useState<Page[]>([]);
-  const { pages, currentPage, fetchPages, addPage, setCurrentPage } = useEditorStore();
+  const navigate = useNavigate();
+  const { pages, currentPage, addPage, setCurrentPage } = useEditorStore();
   const logout = useAuthStore((state) => state.logout);
 
-  useEffect(() => {
-    fetchPages();
-  }, [fetchPages]);
+  const recentPages = pages
+    .slice()
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5);
 
-  useEffect(() => {
-    const recent = pages
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      )
-      .slice(0, 5);
-    setRecentPages(recent);
-  }, [pages]);
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-  const renderPageItem = (page: Page, depth = 0) => {
+  const renderPageItem = (page: any, depth = 0) => {
     const hasChildren = pages.some((p) => p.parent_id === page.id);
-    const isExpanded = true; // TODO: Implement expansion state
+    const [isExpanded, setIsExpanded] = useState(true);
 
     return (
       <div key={page.id} style={{ marginLeft: `${depth * 1.5}rem` }}>
         <button
-          onClick={() => setCurrentPage({ ...page, content: '' })}
+          onClick={() => setCurrentPage(page)}
           className={cn(
             'w-full flex items-center gap-2 px-2 py-1 rounded-sm text-left text-sm group',
             currentPage?.id === page.id
               ? 'bg-gray-200 dark:bg-gray-700'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
           )}
         >
           {hasChildren && (
-            <button className="opacity-0 group-hover:opacity-100">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              className="opacity-0 group-hover:opacity-100"
+            >
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (
@@ -66,9 +60,9 @@ const Sidebar = () => {
               )}
             </button>
           )}
-          <FileText className="w-4 h-4" />
-          <span className="flex-1 truncate">{page.title}</span>
-          {page.is_favorite && <Star className="w-3 h-3 text-yellow-500" />}
+          <FileText className="w-4 h-4 shrink-0" />
+          <span className="flex-1 truncate">{page.title || 'Untitled'}</span>
+          {page.is_favorite && <Star className="w-3 h-3 text-yellow-500 shrink-0" />}
         </button>
         {hasChildren &&
           isExpanded &&
@@ -81,7 +75,7 @@ const Sidebar = () => {
 
   if (isCollapsed) {
     return (
-      <div className="w-12 h-screen bg-gray-50 dark:bg-gray-900 border-r flex flex-col items-center py-4">
+      <div className="w-12 h-screen bg-[var(--bg-secondary)] border-r flex flex-col items-center py-4">
         <button
           onClick={() => setIsCollapsed(false)}
           className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-sm"
@@ -93,9 +87,12 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-64 h-screen bg-gray-50 dark:bg-gray-900 border-r flex flex-col">
+    <div className="w-64 h-screen bg-[var(--bg-secondary)] border-r flex flex-col">
       <div className="p-4 border-b flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Notion Clone</h1>
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          <span className="font-semibold">Your Notes</span>
+        </div>
         <button
           onClick={() => setIsCollapsed(true)}
           className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-sm"
@@ -107,25 +104,25 @@ const Sidebar = () => {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-500">Recent</span>
+            <span className="text-sm font-medium text-[var(--text-secondary)]">Recent</span>
           </div>
           <div className="space-y-1">
             {recentPages.map((page) => (
               <button
                 key={page.id}
-                onClick={() => setCurrentPage({ ...page, content: '' })}
-                className="w-full flex items-center gap-2 px-2 py-1 rounded-sm text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setCurrentPage(page)}
+                className="w-full flex items-center gap-2 px-2 py-1 rounded-sm text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <Clock className="w-4 h-4" />
-                {page.title}
+                <Clock className="w-4 h-4 shrink-0" />
+                <span className="truncate">{page.title || 'Untitled'}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mb-6">
+        <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-500">Pages</span>
+            <span className="text-sm font-medium text-[var(--text-secondary)]">Pages</span>
             <button
               onClick={() => addPage()}
               className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-sm"
@@ -141,8 +138,8 @@ const Sidebar = () => {
 
       <div className="p-4 border-t">
         <button
-          onClick={logout}
-          className="w-full flex items-center gap-2 px-2 py-1 rounded-sm text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <LogOut className="w-4 h-4" />
           Sign out

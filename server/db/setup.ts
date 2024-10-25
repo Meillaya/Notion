@@ -9,32 +9,38 @@ export function setupDatabase() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
+  // Remove existing database to ensure clean schema
+  if (fs.existsSync(DB_PATH)) {
+    fs.unlinkSync(DB_PATH);
+  }
+
   const db = new Database(DB_PATH);
 
-  // Users table
+  // Users table with password hash
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
       theme TEXT DEFAULT 'light',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  // Auth codes table
+  // Password reset tokens table
   db.exec(`
-    CREATE TABLE IF NOT EXISTS auth_codes (
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      code TEXT NOT NULL,
-      expires_at DATETIME NOT NULL,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
       used BOOLEAN DEFAULT FALSE,
+      expires_at DATETIME NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id)
     )
   `);
 
-  // Pages table with hierarchical structure
+  // Pages table
   db.exec(`
     CREATE TABLE IF NOT EXISTS pages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

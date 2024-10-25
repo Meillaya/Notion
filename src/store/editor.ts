@@ -5,6 +5,8 @@ export interface Page {
   id: string;
   title: string;
   content: string;
+  parent_id: string | null;
+  is_favorite: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -12,15 +14,16 @@ export interface Page {
 interface EditorState {
   pages: Page[];
   currentPage: Page | null;
-  setCurrentPage: (page: Page) => void;
+  setCurrentPage: (page: Page | null) => void;
   addPage: () => void;
   updatePage: (page: Page) => void;
   deletePage: (id: string) => void;
+  fetchPages: () => Promise<void>;
 }
 
 export const useEditorStore = create<EditorState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       pages: [],
       currentPage: null,
       setCurrentPage: (page) => set({ currentPage: page }),
@@ -28,7 +31,9 @@ export const useEditorStore = create<EditorState>()(
         const newPage: Page = {
           id: crypto.randomUUID(),
           title: 'Untitled',
-          content: '',
+          content: '<p>Start writing here...</p>',
+          parent_id: null,
+          is_favorite: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -49,6 +54,11 @@ export const useEditorStore = create<EditorState>()(
           pages: state.pages.filter((p) => p.id !== id),
           currentPage: state.currentPage?.id === id ? null : state.currentPage,
         })),
+      fetchPages: async () => {
+        // In a real app, this would fetch pages from the API
+        // For now, we'll just use the persisted pages
+        return Promise.resolve();
+      },
     }),
     {
       name: 'editor-storage',

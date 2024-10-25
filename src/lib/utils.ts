@@ -11,9 +11,13 @@ export function getCaretCoordinates(): { x: number; y: number } | null {
 
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
+  
+  // Ensure coordinates are within viewport
+  const x = Math.min(rect.left, window.innerWidth - 400); // 400px is command menu width
+  const y = Math.min(rect.top, window.innerHeight - 300); // 300px is approximate max height
 
   return {
-    x: rect.left,
-    y: rect.top,
+    x,
+    y,
   };
 }
