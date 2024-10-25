@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+  }
+
+  .dark {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #a3a3a3;
+  }
+
+  .nord {
+    --bg-primary: #2E3440;
+    --bg-secondary: #3B4252;
+    --text-primary: #D8DEE9;
+    --text-secondary: #88C0D0;
+  }
+
+  .monokai {
+    --bg-primary: #272822;
+    --bg-secondary: #3E3D32;
+    --text-primary: #F8F8F2;
+    --text-secondary: #FD971F;
+  }
+
+  body {
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)];
+  }
+}
+
+.ProseMirror {
+  @apply min-h-[500px] px-8 py-4 prose prose-lg max-w-none focus:outline-none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-gray-400 float-left h-0 pointer-events-none;
+}

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { authRouter } from './routes/auth';
+import { pagesRouter } from './routes/pages';
 import { setupDatabase } from './db/setup';
 
 dotenv.config();
@@ -17,6 +18,7 @@ setupDatabase();
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/pages', pagesRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
